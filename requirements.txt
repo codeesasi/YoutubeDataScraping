@@ -6,3 +6,4 @@ pytubefix
 yt_dlp
 pymongo
 redis
+tqdm

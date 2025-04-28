@@ -5,7 +5,7 @@ import time
 from threading import Thread
 import youtubeMetadata
 import youtubeComments
-
+from utils import Scraping
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 # Configure Jinja2 to use different delimiters to avoid conflicts with Angular
@@ -24,10 +24,9 @@ def process_url_in_background(url, task_id):
         # Update status to processing
         redis_client.set(f"task:{task_id}:status", "Fetching metadata...")
         metadata = youtubeMetadata.process_metadata(url)
-        redis_client.set(f"task:{task_id}:metadata", json.dumps(metadata))
         
         redis_client.set(f"task:{task_id}:status", "Downloading comments...")
-        youtubeComments.process_comments(url)
+        Scraping.process_comments(url)
         
         redis_client.set(f"task:{task_id}:status", "Completed")
     except Exception as e:
