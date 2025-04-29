@@ -24,7 +24,110 @@
     <div id="root"></div>
 
     <script type="text/babel">
+      function Settings({ isOpen, onClose }) {
+        const [apiKey, setApiKey] = React.useState('');
+        const [isUpdating, setIsUpdating] = React.useState(false);
+
+        React.useEffect(() => {
+          if (isOpen) {
+            // Fetch API key when settings popup opens
+            fetch('/api/get-config')
+              .then(response => response.json())
+              .then(data => {
+                if (data.api_key) {
+                  setApiKey(data.api_key);
+                }
+              })
+              .catch(error => {
+                console.error('Failed to load API key:', error);
+              });
+          }
+        }, [isOpen]);
+
+        const handleUpdateKey = async () => {
+          setIsUpdating(true);
+          try {
+            const response = await fetch('/api/update-key', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ api_key: apiKey })
+            });
+            if (response.ok) {
+              alert('API key updated successfully');
+              setApiKey('');
+            }
+          } catch (error) {
+            alert('Failed to update API key');
+          }
+          setIsUpdating(false);
+        };
+
+        const handleLocalSetup = async () => {
+          try {
+            const response = await fetch('/api/setup-local', { method: 'POST' });
+            if (response.ok) {
+              alert('Local setup started');
+            }
+          } catch (error) {
+            alert('Failed to start local setup');
+          }
+        };
+
+        if (!isOpen) return null;
+
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-zinc-800 rounded-xl p-6 w-full max-w-md shadow-xl border border-zinc-700">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-white">Settings</h2>
+                <button onClick={onClose} className="text-zinc-400 hover:text-white">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">API Key</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="flex-1 bg-zinc-900 text-white rounded-lg border border-zinc-700 px-4 py-2"
+                      placeholder="Enter your API key"
+                    />
+                    <button
+                      onClick={handleUpdateKey}
+                      disabled={!apiKey.trim() || isUpdating}
+                      className={`px-4 py-2 rounded-lg ${
+                        apiKey.trim() && !isUpdating
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                          : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {isUpdating ? 'Updating...' : 'Update'}
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <button
+                    onClick={handleLocalSetup}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white rounded-lg px-4 py-2"
+                  >
+                    Setup Local Machine
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       function App() {
+        const [showSettings, setShowSettings] = React.useState(false);
         const [messages, setMessages] = React.useState([]);
         const [input, setInput] = React.useState("");
         const [isLoading, setIsLoading] = React.useState(false);
@@ -73,22 +176,24 @@
 
         return (
           <div className="h-[100vh] h-[calc(var(--vh, 1vh)*100)] w-screen flex flex-col">
-            {/* Modern Header */}
             <div className="bg-zinc-800 border-b border-zinc-700">
-                <div className="max-w-[1920px] mx-auto px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            <h1 className="text-2xl font-semibold bg-gradient-to-r from-blue-400 to-blue-600 text-transparent bg-clip-text">
-                                YouTube Tools
-                            </h1>
-                        </div>
-                        <div className="flex items-center space-x-4">                            
-                            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-all duration-200 transform hover:scale-105">
-                                Settings
-                            </button>
-                        </div>
-                    </div>
+              <div className="max-w-[1920px] mx-auto px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <h1 className="text-2xl font-semibold bg-gradient-to-r from-blue-400 to-blue-600 text-transparent bg-clip-text">
+                      YouTube Tools
+                    </h1>
+                  </div>
+                  <div className="flex items-center space-x-4">                            
+                    <button 
+                      onClick={() => setShowSettings(true)}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-all duration-200 transform hover:scale-105"
+                    >
+                      Settings
+                    </button>
+                  </div>
                 </div>
+              </div>
             </div>
 
             {/* Chat Container */}
@@ -181,6 +286,7 @@
                 </div>
               </div>
             </div>
+            <Settings isOpen={showSettings} onClose={() => setShowSettings(false)} />
           </div>
         );
       }
