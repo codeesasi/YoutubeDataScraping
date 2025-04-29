@@ -7,3 +7,4 @@ yt_dlp
 pymongo
 redis
 tqdm
+flask-cors==4.0.0

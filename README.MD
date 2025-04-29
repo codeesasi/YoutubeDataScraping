@@ -24,4 +24,14 @@ A clean and efficient Python tool to download high-quality YouTube videos by fet
 ### Install dependencies:
 
 ```bash
+
+pip install flask==2.0.1
+pip install flask-login==0.5.0
+pip install pytube==12.1.0
+pip install werkzeug==2.0.1
 pip install pytubefix
+pip install yt_dlp
+pip install pymongo
+pip install redis
+pip install tqdm
+pip install flask-cors==4.0.0

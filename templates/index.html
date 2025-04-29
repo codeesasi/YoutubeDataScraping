@@ -1,333 +1,227 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Analytics Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-dark: #4338ca;
-            --secondary: #64748b;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --background: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --border: #e2e8f0;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--background);
-            color: var(--text);
-            line-height: 1.5;
-        }
-
-        .dashboard {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .header {
-            background: linear-gradient(to right, var(--primary), var(--primary-dark));
-            padding: 1.25rem;
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-        }
-
-        .header h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: white;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-        }
-
-        .main-content {
-            max-width: 1400px;
-            margin: 2rem auto;
-            padding: 0 1.5rem;
-            display: grid;
-            grid-template-columns: 380px 1fr;
-            gap: 2rem;
-        }
-
-        .url-form {
-            background: var(--card-bg);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-
-        .input-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .input-group input {
-            width: 90%;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            transition: all 0.2s;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
-        .btn {
-            width: 70%;
-            padding: 0.75rem 1.5rem;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .btn:hover {
-            background: var(--primary-dark);
-        }
-
-        .btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .video-details {
-            background: var(--card-bg);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-
-        .video-card {
-            display: grid;
-            gap: 1.5rem;
-        }
-
-        .video-card img {
-            width: 100%;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-
-        .video-info {
-            background: var(--background);
-            padding: 1rem;
-            border-radius: 0.75rem;
-            border-left: 4px solid var(--primary);
-        }
-
-        .video-info label {
-            color: var(--primary);
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-
-        .alert {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-top: 1rem;
-            font-size: 0.875rem;
-        }
-
-        .alert-success {
-            background-color: #dcfce7;
-            color: #166534;
-        }
-
-        .alert-error {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 1rem;
-            height: 1rem;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s linear infinite;
-        }
-
-        @media (max-width: 1024px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body ng-app="urlDashboardApp" ng-controller="MainController">
-    {% raw %}
-    <div class="dashboard">
-        <header class="header">
-            <h1><i class="fab fa-youtube"></i> YouTube Analytics Dashboard</h1>
-        </header>
-        
-        <main class="main-content">
-            <div class="url-form">
-                <h2 align="center">Enter YouTube URL</h2>
-                <div class="input-group">
-                    <input type="text" ng-model="url" placeholder="Enter YouTube URL" ng-change="validateUrl()">
-                </div>
-                <button class="btn" ng-disabled="!isValidUrl || isProcessing" ng-click="submitUrl()">
-                    <span class="loading-spinner" ng-if="isProcessing"></span>
-                    {{isProcessing ? 'Processing...' : 'Analyze Video'}}
-                </button>
-                
-                <div class="alert alert-info" ng-if="processingStatus">
-                    {{ processingStatus }}
-                </div>
-                <div class="alert alert-success" ng-if="successMessage">
-                    {{ successMessage }}
-                </div>
-                <div class="alert alert-error" ng-if="errorMessage">
-                    {{ errorMessage }}
-                </div>
-            </div>
-
-            <div class="video-details" ng-if="metadata">
-                <div class="video-card">
-                    <img ng-src="{{metadata.thumbnail}}" alt="Video thumbnail">
-                    <h3>{{metadata.Title}}</h3>
-                    
-                    <div class="video-info">
-                        <label>Channel:</label> {{metadata.Channel}}
-                    </div>
-                    
-                    <div class="video-info">
-                        <label>Views:</label> {{metadata.views | number}}
-                    </div>
-                    
-                    <div class="video-info">
-                        <label>Likes:</label> {{metadata.Likes | number}}
-                    </div>
-                    
-                    <div class="video-info">
-                        <label>Available Resolutions:</label>
-                        <span ng-repeat="res in metadata.resolutions">{{res}}{{$last ? '' : ', '}}</span>
-                    </div>
-                    
-                    <div class="video-info">
-                        <label>Description:</label>
-                        <div class="description">{{metadata.description}}</div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-    {% endraw %}
-
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Tools Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css" />
     <script>
-        angular.module('urlDashboardApp', [])
-        .controller('MainController', ['$scope', '$http', function($scope, $http) {
-            $scope.url = '';
-            $scope.isValidUrl = false;
-            $scope.successMessage = '';
-            $scope.errorMessage = '';
-            $scope.isProcessing = false;
-            $scope.processingStatus = '';
-            $scope.metadata = null;
-            
-            $scope.validateUrl = function() {
-                // Better URL validation pattern
-                var urlPattern = new RegExp(
-                    '^(https?:\\/\\/)?' + // protocol
-                    '((?:www\\.)?youtube\\.com\\/watch\\?v=[\\w-]+|' + // long YouTube URL
-                    'youtu\\.be\\/[\\w-]+)' + // short YouTube URL
-                    '(\\?[;&a-z\\d%_.~+=-]*)?' + // additional query parameters
-                    '(\\#[-a-z\\d_]*)?$', // fragment locator
-                    'i'
-                );
-                
-                // Make sure the URL is not empty and matches the pattern
-                $scope.isValidUrl = !!$scope.url && urlPattern.test($scope.url);
-                
-                // For debugging
-                console.log("Current URL:", $scope.url);
-                console.log("Is valid:", $scope.isValidUrl);
-            };
-            
-            $scope.submitUrl = function() {
-                if (!$scope.isValidUrl) {
-                    $scope.errorMessage = 'Please enter a valid URL before submitting.';
-                    return;
-                }
-                
-                $scope.successMessage = '';
-                $scope.errorMessage = '';
-                $scope.isProcessing = true;
-                
-                // Add http:// if it's missing
-                let urlToSubmit = $scope.url;
-                if (!/^https?:\/\//i.test(urlToSubmit)) {
-                    urlToSubmit = 'http://' + urlToSubmit;
-                }
-                
-                $http.post('/api/submit-url', { url: urlToSubmit })
-                    .then(function(response) {
-                        // Set up SSE listener
-                        const eventSource = new EventSource('/api/status/' + response.data.task_id);
-                        
-                        eventSource.onmessage = function(event) {
-                            const data = JSON.parse(event.data);
-                            $scope.$apply(function() {
-                                $scope.processingStatus = data.status;
-                                
-                                if (data.metadata) {
-                                    $scope.metadata = data.metadata;
-                                }
-                                
-                                if (data.status === 'Completed') {
-                                    $scope.successMessage = 'Processing completed successfully!';
-                                    $scope.isProcessing = false;
-                                    $scope.processingStatus = '';
-                                    eventSource.close();
-                                } else if (data.status.startsWith('Error')) {
-                                    $scope.errorMessage = data.status;
-                                    $scope.isProcessing = false;
-                                    $scope.processingStatus = '';
-                                    eventSource.close();
-                                }
-                            });
-                        };
-                    })
-                    .catch(function(error) {
-                        $scope.errorMessage = 'Error processing URL. Please try again.';
-                        $scope.isProcessing = false;
-                        console.error('Error:', error);
-                    });
-            };
-            
-            // Initialize validation check when the controller loads
-            $scope.validateUrl();
-        }]);
+      // Add window resize listener
+      window.addEventListener("resize", () => {
+        document.documentElement.style.setProperty(
+          "--vh",
+          `${window.innerHeight * 0.01}px`
+        );
+      });
     </script>
-</body>
+  </head>
+  <body class="bg-zinc-900 min-h-screen overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      function App() {
+        const [messages, setMessages] = React.useState([]);
+        const [input, setInput] = React.useState("");
+        const [isLoading, setIsLoading] = React.useState(false);
+        const chatBoxRef = React.useRef(null);
+
+        const handleSend = () => {
+          if (input.trim()) {
+            const timestamp = new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            setMessages([
+              ...messages,
+              { text: input, sender: "user", time: timestamp },
+            ]);
+            setInput("");
+            setIsLoading(true);
+
+            setTimeout(() => {
+              setIsLoading(false);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  text: "Thank you for your message. I'll help you with that.",
+                  sender: "bot",
+                  time: new Date().toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
+                },
+              ]);
+            }, 1500);
+          }
+        };
+
+        React.useEffect(() => {
+          // Set initial viewport height
+          document.documentElement.style.setProperty(
+            "--vh",
+            `${window.innerHeight * 0.01}px`
+          );
+          if (chatBoxRef.current) {
+            chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+          }
+        }, [messages]);
+
+        return (
+          <div className="h-[100vh] h-[calc(var(--vh, 1vh)*100)] w-screen flex flex-col">
+            {/* Modern Header */}
+            <div className="bg-zinc-800 border-b border-zinc-700">
+                <div className="max-w-[1920px] mx-auto px-6 py-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                            <h1 className="text-2xl font-semibold bg-gradient-to-r from-blue-400 to-blue-600 text-transparent bg-clip-text">
+                                YouTube Tools
+                            </h1>
+                        </div>
+                        <div className="flex items-center space-x-4">                            
+                            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-all duration-200 transform hover:scale-105">
+                                Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Chat Container */}
+            <div className="flex-1 overflow-hidden bg-zinc-900">
+              <div className="h-full max-w-[1920px] mx-auto flex flex-col">
+                <div
+                  ref={chatBoxRef}
+                  className="flex-1 overflow-y-auto p-6 space-y-4"
+                >
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${
+                        message.sender === "user"
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-6 py-4 shadow-lg ${
+                          message.sender === "user"
+                            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                            : "bg-gradient-to-br from-zinc-800 to-zinc-900 text-zinc-100 border border-zinc-700/50"
+                        }`}
+                      >
+                        <div className="text-lg">{message.text}</div>
+                        <div className="text-sm mt-2 opacity-75">
+                          {message.time}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-zinc-800 border border-zinc-700 rounded px-6 py-4">
+                        <div className="flex space-x-2">
+                          <div className="w-2 h-2 bg-zinc-400 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-zinc-400 rounded-full animate-pulse delay-75"></div>
+                          <div className="w-2 h-2 bg-zinc-400 rounded-full animate-pulse delay-150"></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Input Area */}
+                <div className="border-t border-zinc-700/50 bg-gradient-to-b from-zinc-800 to-zinc-900 backdrop-blur-xl p-4 shadow-lg">
+                  <div className="max-w-[1920px] mx-auto flex space-x-4">
+                    <div className="flex-1 relative group">
+                      <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && handleSend()}
+                        placeholder="Type your message here..."
+                        className="w-full bg-zinc-800/50 text-zinc-100 rounded-xl border border-zinc-700/50 px-6 py-3 text-lg shadow-inner 
+                        focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 placeholder-zinc-500
+                        transition-all duration-300 group-hover:border-zinc-600/50"
+                      />
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-purple-500/0 opacity-0 
+                        group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                    </div>
+                    <button
+                      onClick={handleSend}
+                      disabled={!input.trim()}
+                      className={`${
+                        input.trim() 
+                          ? "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:scale-105 hover:shadow-xl hover:shadow-blue-500/20" 
+                          : "bg-zinc-700/50 cursor-not-allowed"
+                      } text-white rounded-xl w-12 h-12 flex items-center justify-center transition-all duration-300 shadow-lg`}
+                      title="Send message"
+                    >
+                      <svg
+                        className={`w-5 h-5 transform rotate-90 transition-transform duration-300 ${
+                          input.trim() ? "scale-100" : "scale-90 opacity-50"
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      ReactDOM.render(<App />, document.getElementById("root"));
+    </script>
+
+    <style>
+      /* Add these new styles */
+      .message-appear {
+        animation: messageAppear 0.3s ease-out forwards;
+      }
+
+      @keyframes messageAppear {
+        from {
+          opacity: 0;
+          transform: translateY(20px) scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* Update existing scrollbar styles */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: rgba(63, 63, 70, 0.5);
+        border-radius: 10px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(82, 82, 91, 0.8);
+      }
+    </style>
+  </body>
 </html>
