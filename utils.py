@@ -71,15 +71,29 @@ class Scraping:
             }
             return data
     
-    def Youtube_search(query, max_results=20, sort_by="relevance", duration="any", keyword_filter=None, video_type="video"):
+    def Youtube_search(query:str, max_results=20, sort_by="relevance") -> list:
         try:
             filters = {'sort': sort_by}
-
+            print(f"Searching for: {query}")
             # Set up search with multiple filters
-            s = Search(query,filters=filters)
-            
-            # Get video results, limit to max_results
-            results = s.videos[:max_results]
+            retries = 3
+            while retries > 0:
+                try:
+                    s = Search(query, filters=filters)
+                    # Get video results, limit to max_results
+                    results = s.videos[:max_results]
+                    if not results:  # Retry if results is empty
+                        retries -= 1
+                        if retries == 0:
+                            raise ConnectionError("Failed to get results after all retries")
+                        print(f"No results found, retrying... ({retries} attempts left)")
+                        continue
+                    break
+                except ConnectionError:
+                    retries -= 1
+                    if retries == 0:
+                        raise
+                    print(f"Connection failed, retrying... ({retries} attempts left)")
             
             video_data = []
             for video in results:

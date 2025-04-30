@@ -8,11 +8,29 @@
     <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+    </style>
 </head>
 <body class="bg-zinc-900 min-h-screen">
     <div id="root"></div>
 
     <script type="text/babel">
+        function LoadingSpinner() {
+            return (
+                <svg className="spinner w-6 h-6" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+            );
+        }
+
         function Notification({ message, type, onClose }) {
             const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
             
@@ -72,6 +90,38 @@
                 setIsLoading(false);
             };
 
+            React.useEffect(() => {
+                // Initial animation
+                anime({
+                    targets: '#app-container',
+                    opacity: [0, 1],
+                    translateY: [20, 0],
+                    duration: 800,
+                    easing: 'easeOutCubic'
+                });
+
+                anime({
+                    targets: '.input-group',
+                    opacity: [0, 1],
+                    translateY: [20, 0],
+                    delay: 300,
+                    duration: 800,
+                    easing: 'easeOutCubic'
+                });
+            }, []);
+
+            const animateLoading = () => {
+                anime({
+                    targets: '.loading-pulse',
+                    scale: [1, 1.1],
+                    opacity: [1, 0.7],
+                    duration: 800,
+                    direction: 'alternate',
+                    loop: true,
+                    easing: 'easeInOutSine'
+                });
+            };
+
             return (
                 <div className="min-h-screen flex flex-col">
                     <Notification 
@@ -80,38 +130,65 @@
                         onClose={() => setNotification({ message: "", type: "" })}
                     />
 
-                    <div className="flex-1 flex flex-col items-center justify-center p-6">
+                    <div id="app-container" className="flex-1 flex flex-col items-center justify-center p-6">
                         <div className="w-full max-w-2xl space-y-8">
                             <h1 className="text-4xl font-bold text-center bg-gradient-to-r from-blue-400 to-blue-600 text-transparent bg-clip-text">
                                 YouTube Scraper
                             </h1>
                             
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    placeholder="Enter YouTube URL or search query"
-                                    className="w-full bg-zinc-800 text-white rounded-xl border border-zinc-700 px-6 py-4 text-lg shadow-inner 
-                                             focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                                />
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={!input.trim() || isLoading}
-                                    className={`mt-4 w-full px-6 py-3 rounded-xl text-white font-medium transition-all duration-200
-                                        ${input.trim() && !isLoading
-                                            ? 'bg-blue-600 hover:bg-blue-700 transform hover:scale-[1.02]'
-                                            : 'bg-zinc-700 cursor-not-allowed'}`}
-                                >
-                                    {isLoading ? 'Processing...' : 'Process'}
-                                </button>
+
+                            <div className="input-group relative">
+                                <div className="flex gap-4">
+                                    <input
+                                        type="text"
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
+                                        placeholder="Enter YouTube URL or search query"
+                                        className="flex-1 bg-zinc-800 text-white rounded-xl border border-zinc-700 px-6 py-4 text-lg shadow-inner 
+                                                focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300"
+                                    />
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={!input.trim() || isLoading}
+                                        className={`px-8 rounded-xl text-white font-medium transition-all duration-300 flex items-center justify-center
+                                            ${input.trim() && !isLoading
+                                                ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
+                                                : 'bg-zinc-700 cursor-not-allowed'} 
+                                            ${isLoading ? 'loading-pulse' : ''}`}
+                                    >
+                                        {isLoading ? <LoadingSpinner /> : 'Process'}
+                                    </button>
+                                </div>
                             </div>
 
                             {results && (
-                                <div className="bg-zinc-800 rounded-xl p-6 border border-zinc-700">
-                                    <pre className="text-white overflow-auto">
-                                        {JSON.stringify(results, null, 2)}
-                                    </pre>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {Array.isArray(results) ? results.map((video, index) => (
+                                        <div key={index} className="bg-zinc-800 rounded-xl overflow-hidden hover:scale-105 transition-transform duration-300 shadow-lg">
+                                            <a href={video.Video_url} target="_blank" rel="noopener noreferrer">
+                                                <img 
+                                                    src={video.Thumbnail} 
+                                                    alt={video.Title}
+                                                    className="w-full h-48 object-cover"
+                                                />
+                                                <div className="p-4 space-y-2">
+                                                    <h3 className="text-white font-semibold line-clamp-2">{video.Title}</h3>
+                                                    <div className="flex items-center text-zinc-400 text-sm">
+                                                        <span>{video.Channel}</span>
+                                                        <span className="mx-2">•</span>
+                                                        <span>{video.Views.toLocaleString()} views</span>
+                                                    </div>
+                                                    <div className="text-zinc-500 text-sm">
+                                                        {new Date(video.Upload_date.replace(/:/, 'T')).toLocaleDateString()}
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    )) : (
+                                        <pre className="text-white overflow-auto col-span-full">
+                                            {JSON.stringify(results, null, 2)}
+                                        </pre>
+                                    )}
                                 </div>
                             )}
                         </div>
