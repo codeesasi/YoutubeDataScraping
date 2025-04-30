@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Scraper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
+<body class="bg-zinc-900 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function Notification({ message, type, onClose }) {
+            const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+            
+            React.useEffect(() => {
+                if (message) {
+                    const timer = setTimeout(onClose, 3000);
+                    return () => clearTimeout(timer);
+                }
+            }, [message]);
+
+            if (!message) return null;
+
+            return (
+                <div className={`fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg`}>
+                    {message}
+                </div>
+            );
+        }
+
+        function App() {
+            const [input, setInput] = React.useState("");
+            const [isLoading, setIsLoading] = React.useState(false);
+            const [notification, setNotification] = React.useState({ message: "", type: "" });
+            const [results, setResults] = React.useState(null);
+
+            const isValidUrl = (string) => {
+                try {
+                    new URL(string);
+                    return string.includes("youtube.com") || string.includes("youtu.be");
+                } catch (error) {
+                    return false;
+                }
+            };
+
+            const handleSubmit = async () => {
+                setIsLoading(true);
+                setResults(null);
+                try {
+                    const isUrl = isValidUrl(input);
+                    const endpoint = isUrl ? '/api/process-metadata' : '/api/youtube-search';
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(isUrl ? { url: input } : { query: input })
+                    });
+                    
+                    const data = await response.json();
+                    if (response.ok) {
+                        setResults(data);
+                        setNotification({ message: "Successfully processed!", type: "success" });
+                    } else {
+                        throw new Error(data.message || "Failed to process request");
+                    }
+                } catch (error) {
+                    setNotification({ message: error.message, type: "error" });
+                }
+                setIsLoading(false);
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <Notification 
+                        message={notification.message}
+                        type={notification.type}
+                        onClose={() => setNotification({ message: "", type: "" })}
+                    />
+
+                    <div className="flex-1 flex flex-col items-center justify-center p-6">
+                        <div className="w-full max-w-2xl space-y-8">
+                            <h1 className="text-4xl font-bold text-center bg-gradient-to-r from-blue-400 to-blue-600 text-transparent bg-clip-text">
+                                YouTube Scraper
+                            </h1>
+                            
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    placeholder="Enter YouTube URL or search query"
+                                    className="w-full bg-zinc-800 text-white rounded-xl border border-zinc-700 px-6 py-4 text-lg shadow-inner 
+                                             focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                                />
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={!input.trim() || isLoading}
+                                    className={`mt-4 w-full px-6 py-3 rounded-xl text-white font-medium transition-all duration-200
+                                        ${input.trim() && !isLoading
+                                            ? 'bg-blue-600 hover:bg-blue-700 transform hover:scale-[1.02]'
+                                            : 'bg-zinc-700 cursor-not-allowed'}`}
+                                >
+                                    {isLoading ? 'Processing...' : 'Process'}
+                                </button>
+                            </div>
+
+                            {results && (
+                                <div className="bg-zinc-800 rounded-xl p-6 border border-zinc-700">
+                                    <pre className="text-white overflow-auto">
+                                        {JSON.stringify(results, null, 2)}
+                                    </pre>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById("root"));
+    </script>
+</body>
+</html>

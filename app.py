@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 import configparser
-from utils import DockerUtils, others
+from utils import Scraping
 
 app = Flask(__name__)
 CORS(app)
@@ -59,6 +59,36 @@ def remove_key():
         return jsonify({'status': 'success'})
     except Exception as e:
         print(f"Error removing key: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/scraping')
+def scraping():
+    return render_template('scraping.html')
+
+@app.route('/api/process-metadata', methods=['POST'])
+def api_process_metadata():
+    try:
+        data = request.json
+        url = data.get('url')
+        if not url:
+            return jsonify({'error': 'URL is required'}), 400
+        
+        result = Scraping.process_metadata(url)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/youtube-search', methods=['POST'])
+def api_youtube_search():
+    try:
+        data = request.json
+        query = data.get('query')
+        if not query:
+            return jsonify({'error': 'Search query is required'}), 400
+        
+        results = Scraping.Youtube_search(query)
+        return jsonify(results)
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
