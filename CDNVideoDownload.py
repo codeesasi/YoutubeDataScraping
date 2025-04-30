@@ -31,14 +31,7 @@ while True:
             page.goto(VIDEO_PAGE_URL)
 
             # Wait a bit more to ensure video loads
-            page.wait_for_timeout(40000)
-
-            # Wait for the element to be present
-            page.wait_for_selector("xpath=/html/body/div[2]/div[2]/div[1]/h1")
-
-            # Get text content
-            text = page.locator("xpath=/html/body/div[2]/div[2]/div[1]/h1").inner_text()
-            print(f"[*] Video name: {text}")
+            page.wait_for_timeout(1000)
 
             # Filter for .mp4 direct video URL
             mp4_urls = [url for url in stream_urls if '.mp4' in url and 'cdn' in url]
