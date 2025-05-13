@@ -183,6 +183,58 @@ class Scraping:
             # youtubedownload.download_youtube_video(video_url)
             return video_title
 
+    def get_channel_content(channel_name):
+        base_url = f"https://www.youtube.com/@{channel_name}"
+
+        content = {
+            "videos": [],
+            "playlists": [],
+            "shorts": [],
+            "live": []
+        }
+
+        ydl_opts = {
+            'extract_flat': True,
+            'skip_download': True,
+            'quiet': True,
+        }
+
+        with YoutubeDL(ydl_opts) as ydl:
+            # Get videos (includes shorts in same feed)
+            try:
+                video_info = ydl.extract_info(f"{base_url}/videos", download=False)
+                for entry in video_info.get('entries', []):
+                    url = f"https://www.youtube.com/watch?v={entry['id']}"
+                    title = entry.get("title", "")
+                    if "/shorts/" in url or "short" in title.lower():
+                        content['shorts'].append((url, title))
+                    else:
+                        content['videos'].append((url, title))
+            except Exception as e:
+                print(f"Error getting videos: {e}")
+
+            # Get playlists
+            try:
+                playlist_info = ydl.extract_info(f"{base_url}/playlists", download=False)
+                for entry in playlist_info.get('entries', []):
+                    url = f"https://www.youtube.com/playlist?list={entry['id']}"
+                    title = entry.get("title", "")
+                    content['playlists'].append((url, title))
+            except Exception as e:
+                print(f"Error getting playlists: {e}")
+
+            # Get live streams
+            try:
+                live_info = ydl.extract_info(f"{base_url}/streams", download=False)
+                for entry in live_info.get('entries', []):
+                    url = f"https://www.youtube.com/watch?v={entry['id']}"
+                    title = entry.get("title", "")
+                    content['live'].append((url, title))
+            except Exception as e:
+                print(f"Error getting live: {e}")
+
+        return content
+
 class MongoDBUtils:     
     def insert_data_to_mongo(filename:str, info:str):
         # Connect to MongoDB
@@ -209,48 +261,3 @@ class others:
     def convert_datetime_format(dt):
         # Convert the datetime to the desired format 'YYYY-MM-DD:HH-MM-SS'
         return dt.strftime('%Y-%m-%d:%H-%M-%S')
-    
-    def get_system_info():    
-        # RAM Information
-        ram = psutil.virtual_memory()
-        ram_gb = ram.total / (1024 ** 3)
-
-        # Disk Information
-        disk = psutil.disk_usage('/')
-        disk_gb = disk.total / (1024 ** 3)
-
-        return {
-            "os": platform.system(),
-            "os_version": platform.release(),
-            "processor": platform.processor(),
-            "cpu_cores_physical": psutil.cpu_count(logical=False),
-            "cpu_cores_total": psutil.cpu_count(logical=True),
-            "ram_size_gb": f"{ram_gb:.2f} GB",
-            "disk_size_gb": f"{disk_gb:.2f} GB"
-        }
-    
-    def download_ollama_setup(download_folder="./downloads"):
-        # Ensure download folder exists
-        os.makedirs(download_folder, exist_ok=True)
-        
-        download_url = "https://ollama.com/download/OllamaSetup.exe"
-        file_path = os.path.join(download_folder, "OllamaSetup.exe")
-
-        print(f"Starting download from {download_url}")
-
-        # Make the HTTP request to download the file
-        response = requests.get(download_url, stream=True)
-        response.raise_for_status()  # Check if the request was successful
-        
-        # Get the total file size for progress calculation
-        total_size = int(response.headers.get('Content-Length', 0))
-
-        # Set up tqdm to display the progress bar
-        with tqdm(total=total_size, unit='B', unit_scale=True, desc="Downloading") as bar:
-            # Open the file in write-binary mode and write content in chunks
-            with open(file_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-                    bar.update(len(chunk))  # Update progress bar with each chunk downloaded
-
-        print(f"✅ Download completed: {file_path}")
